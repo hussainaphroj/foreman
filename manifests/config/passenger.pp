@@ -24,13 +24,13 @@ class foreman::config::passenger(
     $listen_interface = '*'
   }
 
-  $foreman_conf = $foreman::use_vhost ? {
+  $foreman_conf = $foreman::params::use_vhost ? {
     false   => 'foreman/foreman-apache.conf.erb',
     default => 'foreman/foreman-vhost.conf.erb',
   }
 
   file {'foreman_vhost':
-    path    => "${foreman::apache_conf_dir}/foreman.conf",
+    path    => "${foreman::params::apache_conf_dir}/foreman.conf",
     content => template($foreman_conf),
     mode    => '0644',
     notify  => Service['httpd'],
@@ -38,14 +38,14 @@ class foreman::config::passenger(
   }
 
   exec {'restart_foreman':
-    command     => "/bin/touch ${foreman::app_root}/tmp/restart.txt",
+    command     => "/bin/touch ${foreman::params::app_root}/tmp/restart.txt",
     refreshonly => true,
-    cwd         => $foreman::app_root,
+    cwd         => $foreman::params::app_root,
     path        => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
   }
 
-  file { ["${foreman::app_root}/config.ru", "${foreman::app_root}/config/environment.rb"]:
-    owner   => $foreman::user,
+  file { ["${foreman::params::app_root}/config.ru", "${foreman::params::app_root}/config/environment.rb"]:
+    owner   => $foreman::params::user,
     require => Class['foreman::install'],
   }
 }
