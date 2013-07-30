@@ -6,6 +6,7 @@ class foreman::config::passenger(
   $scl_prefix = undef
 
 ) {
+  include apache
   include apache::mod::ssl
   include apache::mod::passenger
 
