@@ -33,7 +33,7 @@ class foreman::config::passenger(
     path    => "${foreman::apache_conf_dir}/foreman.conf",
     content => template($foreman_conf),
     mode    => '0644',
-    notify  => Exec['reload-apache'],
+    notify  => Service['httpd'],
     require => Class['foreman::install'],
   }
 
