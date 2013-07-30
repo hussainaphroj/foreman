@@ -62,7 +62,7 @@ class foreman::config {
     ensure  => absent,
   }
 
-  if $foreman::passenger  {
+  if $foreman::params::passenger  {
     class{'foreman::config::passenger':
       listen_on_interface => $foreman::params::passenger_interface,
       scl_prefix          => $foreman::params::passenger_scl,
