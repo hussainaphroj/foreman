@@ -1,9 +1,9 @@
 # Configure foreman
 class foreman::config {
   Cron {
-    require     => User[$foreman::user],
-    user        => $foreman::user,
-    environment => "RAILS_ENV=${foreman::environment}",
+    require     => User[$foreman::params::user],
+    user        => $foreman::params::user,
+    environment => "RAILS_ENV=${foreman::params::environment}",
   }
 
   concat_build {'foreman_settings':
@@ -25,7 +25,7 @@ class foreman::config {
 
   file { '/etc/foreman/database.yml':
     owner   => 'root',
-    group   => $foreman::group,
+    group   => $foreman::params::group,
     mode    => '0640',
     content => template('foreman/database.yml.erb'),
     notify  => Class['foreman::service'],
@@ -48,7 +48,7 @@ class foreman::config {
     before  => Class['foreman::service'],
   }
 
-  file { $foreman::app_root:
+  file { $foreman::params::app_root:
     ensure  => directory,
   }
 
@@ -56,7 +56,7 @@ class foreman::config {
     ensure  => 'present',
     shell   => '/sbin/nologin',
     comment => 'Foreman',
-    home    => $foreman::app_root,
+    home    => $foreman::params::app_root,
     require => Class['foreman::install'],
   }
 
@@ -68,8 +68,8 @@ class foreman::config {
 
   if $foreman::passenger  {
     class{'foreman::config::passenger':
-      listen_on_interface => $foreman::passenger_interface,
-      scl_prefix          => $foreman::passenger_scl,
+      listen_on_interface => $foreman::params::passenger_interface,
+      scl_prefix          => $foreman::params::passenger_scl,
     }
   }
 
