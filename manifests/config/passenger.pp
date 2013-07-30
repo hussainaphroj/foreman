@@ -6,13 +6,15 @@ class foreman::config::passenger(
   $scl_prefix = undef
 
 ) {
-  include apache::ssl
-  include ::passenger
-  if $scl_prefix {
-    class { '::passenger::install::scl':
-      prefix => $scl_prefix,
-    }
-  }
+  include apache::mod::ssl
+  include apache::mod::passenger
+
+# TODO: this is not in use anywhere?
+#  if $scl_prefix {
+#    class { '::passenger::install::scl':
+#      prefix => $scl_prefix,
+#    }
+#  }
 
   # Check the value in case the interface doesn't exist, otherwise listen on all interfaces
   if $listen_on_interface in split($::interfaces, ',') {
