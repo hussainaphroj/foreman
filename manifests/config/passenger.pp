@@ -31,6 +31,7 @@ class foreman::config::passenger(
 	  apache::vhost { 'foreman':
 	    template => 'foreman/foreman-vhost.conf.erb',
 	    port     => 80,
+	    docroot  => "${app_root}/public",
 	    priority => '15',
 	    notify   => Service['httpd'],
 	    require  => Class['foreman::install'],
