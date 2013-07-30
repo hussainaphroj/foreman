@@ -5,7 +5,7 @@ class foreman::config::passenger(
   $listen_on_interface = '',
   $scl_prefix = undef
 
-) {
+) inherits foreman::params {
   include apache
   include apache::mod::ssl
   include apache::mod::passenger
@@ -24,18 +24,28 @@ class foreman::config::passenger(
     $listen_interface = '*'
   }
 
-  $foreman_conf = $foreman::params::use_vhost ? {
-    false   => 'foreman/foreman-apache.conf.erb',
-    default => 'foreman/foreman-vhost.conf.erb',
-  }
+  # Set variables used by vhost template
 
-  file {'foreman_vhost':
-    path    => "${foreman::params::apache_conf_dir}/foreman.conf",
-    content => template($foreman_conf),
-    mode    => '0644',
-    notify  => Service['httpd'],
-    require => Class['foreman::install'],
+
+  if $foreman::params::use_vhost {
+	  apache::vhost { 'foreman':
+	    template => 'foreman/foreman-vhost.conf.erb',
+	    port     => 80,
+	    priority => '15',
+	    notify   => Service['httpd'],
+	    require  => Class['foreman::install'],
+	  }  
+  } else {
+	  file {'foreman_vhost':
+	    path    => "${foreman::params::apache_conf_dir}/foreman.conf",
+	    content => template('foreman/foreman-apache.conf.erb'),
+	    mode    => '0644',
+	    notify  => Service['httpd'],
+	    require => Class['foreman::install'],
+    }    
   }
+  
+
 
   exec {'restart_foreman':
     command     => "/bin/touch ${foreman::params::app_root}/tmp/restart.txt",
