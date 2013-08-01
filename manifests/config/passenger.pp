@@ -4,10 +4,18 @@ class foreman::config::passenger(
   # specifiy which interface to bind passenger to eth0, eth1, ...
   $listen_on_interface = '',
   $scl_prefix = undef
+  $ssl = $::foreman::params::ssl,
 
 ) inherits foreman::params {
   include apache
-  include apache::mod::ssl
+  if $ssl {
+    include apache::mod::ssl
+    $listen_ports = [80, 443]
+  } else {
+    $listen_ports = 80
+  }
+  
+  
   include apache::mod::passenger
 
 # TODO: this is not in use anywhere?
@@ -30,7 +38,7 @@ class foreman::config::passenger(
   if $foreman::params::use_vhost {
 	  apache::vhost { 'foreman':
 	    template => 'foreman/foreman-vhost.conf.erb',
-	    port     => 80,
+	    port     => $listen_ports,
 	    docroot  => "${app_root}/public",
 	    priority => '15',
 	    notify   => Service['httpd'],
