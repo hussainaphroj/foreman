@@ -10,6 +10,13 @@ class foreman::config::passenger (
 
   include apache
 
+  # Check the value in case the interface doesn't exist, otherwise listen on all interfaces
+  if $listen_on_interface in split($::interfaces, ',') {
+    $listen_interface = inline_template("<%= @ipaddress_${listen_on_interface} %>")
+  } else {
+    $listen_interface = '*'
+  }
+
   if $ssl {
     include apache::mod::ssl
 
@@ -27,12 +34,6 @@ class foreman::config::passenger (
     class { '::foreman::install::passenger_scl': prefix => $scl_prefix, }
   }
 
-  # Check the value in case the interface doesn't exist, otherwise listen on all interfaces
-  if $listen_on_interface in split($::interfaces, ',') {
-    $listen_interface = inline_template("<%= @ipaddress_${listen_on_interface} %>")
-  } else {
-    $listen_interface = '*'
-  }
 
   if $foreman::params::use_vhost {
     apache::vhost { 'foreman':
