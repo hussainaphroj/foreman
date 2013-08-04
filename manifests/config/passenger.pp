@@ -1,35 +1,30 @@
 # Configure the foreman service using passenger
-class foreman::config::passenger(
-
+class foreman::config::passenger (
   # specifiy which interface to bind passenger to eth0, eth1, ...
   $listen_on_interface = '',
-  $scl_prefix = undef,
-  $ssl = $::foreman::params::ssl,
-
-) inherits foreman::params {
-
-  #validate parameter values
+  $scl_prefix          = undef,
+  $ssl                 = $::foreman::params::ssl,) inherits foreman::params {
+  # validate parameter values
   validate_bool($ssl)
   validate_string($listen_on_interface)
 
   include apache
-  
+
   if $ssl {
     include apache::mod::ssl
-    apache::listen{ 443: }
+
+    apache::listen { 443: }
     
     # Add ssl fragment to vhost if needed
     $ssl_fragment = template('foreman/foreman-vhost-ssl.conf.erb')
   }
-  
+
   $listen_ports = 80
-  
+
   include apache::mod::passenger
 
   if $scl_prefix {
-    class { '::foreman::install::passenger_scl':
-      prefix => $scl_prefix,
-    }
+    class { '::foreman::install::passenger_scl': prefix => $scl_prefix, }
   }
 
   # Check the value in case the interface doesn't exist, otherwise listen on all interfaces
@@ -38,9 +33,6 @@ class foreman::config::passenger(
   } else {
     $listen_interface = '*'
   }
-
-  # Set variables used by vhost template
-
 
   if $foreman::params::use_vhost {
     apache::vhost { 'foreman':
@@ -53,18 +45,16 @@ class foreman::config::passenger(
       require         => Class['foreman::install'],
     }
   } else {
-	  file {'foreman_vhost':
-	    path    => "${foreman::params::apache_conf_dir}/foreman.conf",
-	    content => template('foreman/foreman-apache.conf.erb'),
-	    mode    => '0644',
-	    notify  => Service['httpd'],
-	    require => Class['foreman::install'],
-    }    
+    file { 'foreman_vhost':
+      path    => "${foreman::params::apache_conf_dir}/foreman.conf",
+      content => template('foreman/foreman-apache.conf.erb'),
+      mode    => '0644',
+      notify  => Service['httpd'],
+      require => Class['foreman::install'],
+    }
   }
-  
 
-
-  exec {'restart_foreman':
+  exec { 'restart_foreman':
     command     => "/bin/touch ${foreman::params::app_root}/tmp/restart.txt",
     refreshonly => true,
     cwd         => $foreman::params::app_root,
