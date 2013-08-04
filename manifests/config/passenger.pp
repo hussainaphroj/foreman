@@ -16,11 +16,10 @@ class foreman::config::passenger(
   
   if $ssl {
     include apache::mod::ssl
-    $listen_ports = [80, 443]
-  } else {
-    $listen_ports = 80
+    apache::listen{ 443: }
   }
   
+  $listen_ports = 80
   
   include apache::mod::passenger
 
