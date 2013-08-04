@@ -3,11 +3,17 @@ class foreman::config::passenger(
 
   # specifiy which interface to bind passenger to eth0, eth1, ...
   $listen_on_interface = '',
-  $scl_prefix = undef
+  $scl_prefix = undef,
   $ssl = $::foreman::params::ssl,
 
 ) inherits foreman::params {
+
+  #validate parameter values
+  validate_bool($ssl)
+  validate_string($listen_on_interface)
+
   include apache
+  
   if $ssl {
     include apache::mod::ssl
     $listen_ports = [80, 443]
@@ -18,12 +24,11 @@ class foreman::config::passenger(
   
   include apache::mod::passenger
 
-# TODO: this is not in use anywhere?
-#  if $scl_prefix {
-#    class { '::passenger::install::scl':
-#      prefix => $scl_prefix,
-#    }
-#  }
+  if $scl_prefix {
+    class { '::foreman::install::passenger_scl':
+      prefix => $scl_prefix,
+    }
+  }
 
   # Check the value in case the interface doesn't exist, otherwise listen on all interfaces
   if $listen_on_interface in split($::interfaces, ',') {
