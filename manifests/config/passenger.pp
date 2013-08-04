@@ -17,6 +17,9 @@ class foreman::config::passenger(
   if $ssl {
     include apache::mod::ssl
     apache::listen{ 443: }
+    
+    # Add ssl fragment to vhost if needed
+    $ssl_fragment = template('foreman/foreman-vhost-ssl.conf.erb')
   }
   
   $listen_ports = 80
@@ -40,14 +43,15 @@ class foreman::config::passenger(
 
 
   if $foreman::params::use_vhost {
-	  apache::vhost { 'foreman':
-	    template => 'foreman/foreman-vhost.conf.erb',
-	    port     => $listen_ports,
-	    docroot  => "${app_root}/public",
-	    priority => '15',
-	    notify   => Service['httpd'],
-	    require  => Class['foreman::install'],
-	  }  
+    apache::vhost { 'foreman':
+      template        => 'foreman/foreman-vhost.conf.erb',
+      custom_fragment => $ssl_fragment,
+      port            => $listen_ports,
+      docroot         => "${app_root}/public",
+      priority        => '15',
+      notify          => Service['httpd'],
+      require         => Class['foreman::install'],
+    }
   } else {
 	  file {'foreman_vhost':
 	    path    => "${foreman::params::apache_conf_dir}/foreman.conf",
