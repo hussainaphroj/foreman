@@ -33,9 +33,14 @@ class foreman::config::passenger (
   if $scl_prefix {
     class { '::foreman::install::passenger_scl': prefix => $scl_prefix, }
   }
-
-
+  
   if $foreman::params::use_vhost {
+	  file { "${app_root}/public":
+	    ensure => link,
+	    target => '/var/lib/foreman/public/',
+	    before => Apache::Vhost['foreman'],
+	  }
+
     apache::vhost { 'foreman':
       template        => 'foreman/foreman-vhost.conf.erb',
       custom_fragment => $ssl_fragment,
