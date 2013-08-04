@@ -8,7 +8,7 @@ class foreman::config::enc (
   $ssl_key      = $foreman::params::client_ssl_key
 ) inherits foreman::params {
 
-  File { require => Class['::puppet'] }
+  File { require => Class['::puppet::master'] }
 
   file { '/etc/puppet/node.rb':
     content => template('foreman/external_node.rb.erb'),
