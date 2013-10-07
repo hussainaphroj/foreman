@@ -1,27 +1,31 @@
 # Configure foreman
 class foreman::config {
   Cron {
-    require     => User[$foreman::params::user],
-    user        => $foreman::params::user,
-    environment => "RAILS_ENV=${foreman::params::environment}",
+    require     => User[$foreman::user],
+    user        => $foreman::user,
+    environment => "RAILS_ENV=${foreman::environment}",
   }
 
-  concat {'/etc/foreman/settings.yaml':
-    owner   => 'root',
-    group   => $foreman::params::group,
-    mode    => '0640',    
-    notify  => Class['foreman::service'],
+  concat_build {'foreman_settings':
+    order => ['*.yaml'],
   }
 
-  concat::fragment {'foreman_settings+01-header.yaml':
-    target  => '/etc/foreman/settings.yaml',
-    order   => 01,
+  concat_fragment {'foreman_settings+01-header.yaml':
     content => template('foreman/settings.yaml.erb'),
+  }
+
+  file {'/etc/foreman/settings.yaml':
+    source  => concat_output('foreman_settings'),
+    require => Concat_build['foreman_settings'],
+    notify  => Class['foreman::service'],
+    owner   => 'root',
+    group   => $foreman::group,
+    mode    => '0640',
   }
 
   file { '/etc/foreman/database.yml':
     owner   => 'root',
-    group   => $foreman::params::group,
+    group   => $foreman::group,
     mode    => '0640',
     content => template('foreman/database.yml.erb'),
     notify  => Class['foreman::service'],
@@ -44,7 +48,7 @@ class foreman::config {
     before  => Class['foreman::service'],
   }
 
-  file { $foreman::params::app_root:
+  file { $foreman::app_root:
     ensure  => directory,
   }
 
@@ -52,7 +56,9 @@ class foreman::config {
     ensure  => 'present',
     shell   => '/sbin/nologin',
     comment => 'Foreman',
-    home    => $foreman::params::app_root,
+    home    => $foreman::app_root,
+    gid     => $foreman::group,
+    groups  => $foreman::user_groups,
     require => Class['foreman::install'],
   }
 
@@ -62,11 +68,10 @@ class foreman::config {
     ensure  => absent,
   }
 
-  if $foreman::params::passenger  {
+  if $foreman::passenger  {
     class{'foreman::config::passenger':
-      listen_on_interface => $foreman::params::passenger_interface,
-      scl_prefix          => $foreman::params::passenger_scl,
-      ssl                 => $foreman::params::ssl,
+      listen_on_interface => $foreman::passenger_interface,
+      scl_prefix          => $foreman::passenger_scl,
     }
   }
 

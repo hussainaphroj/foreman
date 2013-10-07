@@ -35,6 +35,9 @@
 # $gpgcheck::               turn on/off gpg check in repo files (effective only on RedHat family systems)
 #                           type:boolean
 #
+# $version::                foreman package version, it's passed to ensure parameter of package resource
+#                           can be set to specific version number, 'latest', 'present' etc.
+#
 # $db_manage::              if enabled, will install and configure the database server on this host
 #                           type:boolean
 #
@@ -59,6 +62,11 @@
 #
 # $user::                   User under which foreman will run
 #
+# $group::                  Primary group for the Foreman user
+#
+# $user_groups::            Additional groups for the Foreman user
+#                           type:array
+#
 # $environment::            Rails environment of foreman
 #
 # $puppet_basedir::         Where are puppet modules located
@@ -74,6 +82,16 @@
 #                           type:boolean
 #
 # $passenger_interface::    Defines which network interface passenger should listen on, undef means all interfaces
+#
+# $oauth_active::           Enable OAuth authentication for REST API
+#                           type:boolean
+#
+# $oauth_map_users::        Should foreman use the foreman_user header to identify API user?
+#                           type:boolean
+#
+# $oauth_consumer_key::     OAuth consumer key
+#
+# $oauth_consumer_secret::  OAuth consumer secret
 #
 class foreman (
   $foreman_url            = $foreman::params::foreman_url,
@@ -99,6 +117,8 @@ class foreman (
   $db_sslmode             = 'UNSET',
   $app_root               = $foreman::params::app_root,
   $user                   = $foreman::params::user,
+  $group                  = $foreman::params::group,
+  $user_groups            = $foreman::params::user_groups,
   $environment            = $foreman::params::environment,
   $puppet_basedir         = $foreman::params::puppet_basedir,
   $apache_conf_dir        = $foreman::params::apache_conf_dir,
@@ -123,5 +143,7 @@ class foreman (
   class { 'foreman::install': } ~>
   class { 'foreman::config': } ~>
   class { 'foreman::database': } ~>
-  class { 'foreman::service': }
+  class { 'foreman::service': } ->
+  Class['foreman'] ->
+  Foreman_smartproxy <| |>
 }
