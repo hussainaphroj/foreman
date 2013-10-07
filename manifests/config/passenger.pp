@@ -28,7 +28,9 @@ class foreman::config::passenger (
 
   $listen_ports = 80
 
-  include apache::mod::passenger
+  class { 'apache::mod::passenger':
+    passenger_root => $app_root,
+  }
 
   if $scl_prefix {
     class { '::foreman::install::passenger_scl': prefix => $scl_prefix, }
@@ -42,11 +44,11 @@ class foreman::config::passenger (
 	  }
 
     apache::vhost { 'foreman':
-      template        => 'foreman/foreman-vhost.conf.erb',
       custom_fragment => $ssl_fragment,
       port            => $listen_ports,
       docroot         => "${app_root}/public",
       priority        => '15',
+      serveraliases   => [ 'foreman' ],
       notify          => Service['httpd'],
       require         => Class['foreman::install'],
     }
