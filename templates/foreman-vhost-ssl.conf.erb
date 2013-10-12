@@ -1,9 +1,3 @@
-<% if @ssl -%>
-<VirtualHost <%= @listen_interface %>:443>
-  ServerName <%= @fqdn %>
-  ServerAlias foreman
-
-  DocumentRoot <%= @app_root %>/public
   PassengerAppRoot <%= @app_root %>
 <% if @scl_prefix and !@scl_prefix.empty? -%>
   PassengerRuby /usr/bin/<%= @scl_prefix -%>-ruby
@@ -30,6 +24,3 @@
   SSLVerifyClient         optional
   SSLOptions              +StdEnvVars
   SSLVerifyDepth          3
-
-</VirtualHost>
-<% end -%>
