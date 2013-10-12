@@ -28,9 +28,7 @@ class foreman::config::passenger (
 
   $listen_ports = 80
 
-  class { 'apache::mod::passenger':
-    passenger_root => $app_root,
-  }
+  include apache::mod::passenger
 
   if $scl_prefix {
     class { '::foreman::install::passenger_scl': prefix => $scl_prefix, }
