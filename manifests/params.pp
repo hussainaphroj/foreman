@@ -25,6 +25,8 @@ class foreman::params {
   # Choose whether you want to enable locations and organizations.
   $locations_enabled      = false
   $organizations_enabled  = false
+  $configure_epel_repo    = true
+  $configure_scl_repo     = true
 
 # Advance configurations - no need to change anything here by default
   # if set to true, no repo will be added by this module, letting you to
@@ -55,48 +57,73 @@ class foreman::params {
   $db_password = cache_data('db_password', random_password(32))
 
   # OS specific paths
-  $ruby_major = regsubst($::rubyversion, '^(\d+\.\d+).*', '\1')
   case $::osfamily {
     RedHat: {
+      $init_config = '/etc/sysconfig/foreman'
+      $init_config_tmpl = 'foreman.sysconfig'
+
       case $::operatingsystem {
         fedora: {
-          if $::operatingsystemrelease >= 17 {
-            $puppet_basedir  = '/usr/share/ruby/vendor_ruby/puppet'
-          } else {
-            $puppet_basedir  = "/usr/lib/ruby/site_ruby/${ruby_major}/puppet"
-          }
-          $apache_conf_dir = '/etc/httpd/conf.d'
+          $puppet_basedir  = '/usr/share/ruby/vendor_ruby/puppet'
           $yumcode = "f${::operatingsystemrelease}"
           $passenger_scl = undef
+          $plugin_prefix = 'rubygem-foreman_'
         }
         default: {
-          $puppet_basedir  = "/usr/lib/ruby/site_ruby/${ruby_major}/puppet"
-          $apache_conf_dir = '/etc/httpd/conf.d'
-          $osmajor = regsubst($::operatingsystemrelease, '\..*', '')
-          $yumcode = "el${osmajor}"
+          $puppet_basedir = regsubst($::rubyversion, '^(\d+\.\d+).*$', '/usr/lib/ruby/site_ruby/\1/puppet')
+          $yumcode = regsubst($::operatingsystemrelease, '^(\d+)\..*$', 'el\1')
           # add passenger::install::scl as EL uses SCL on Foreman 1.2+
           $passenger_scl = 'ruby193'
+          $plugin_prefix = 'ruby193-rubygem-foreman_'
         }
       }
     }
     Debian: {
       $puppet_basedir  = '/usr/lib/ruby/vendor_ruby/puppet'
-      $apache_conf_dir = '/etc/apache2/conf.d'
       $passenger_scl = undef
+      $plugin_prefix = 'ruby-foreman-'
+      $init_config = '/etc/default/foreman'
+      $init_config_tmpl = 'foreman.default'
     }
-    default:              {
-      $puppet_basedir  = "/usr/lib/ruby/${ruby_major}/puppet"
-      $apache_conf_dir = '/etc/apache2/conf.d/foreman.conf'
-      $passenger_scl = undef
+    Linux: {
+      case $::operatingsystem {
+        Amazon: {
+          $puppet_basedir = regsubst($::rubyversion, '^(\d+\.\d+).*$', '/usr/lib/ruby/site_ruby/\1/puppet')
+          $yumcode = 'el6'
+          # add passenger::install::scl as EL uses SCL on Foreman 1.2+
+          $passenger_scl = 'ruby193'
+          $plugin_prefix = 'ruby193-rubygem-foreman_'
+          $init_config = '/etc/sysconfig/foreman'
+          $init_config_tmpl = 'foreman.sysconfig'
+        }
+        default: {
+          fail("${::hostname}: This module does not support operatingsystem ${::operatingsystem}")
+        }
+      }
+    }
+    ArchLinux: {
+      # Only the agent classes (cron / service) are supported for now, which
+      # doesn't require any OS-specific params
+    }
+    default: {
+      fail("${::hostname}: This module does not support osfamily ${::osfamily}")
     }
   }
   $puppet_home = '/var/lib/puppet'
+  $puppet_user = 'puppet'
+  $lower_fqdn = downcase($::fqdn)
 
   # If CA is specified, remote Foreman host will be verified in reports/ENC scripts
   $client_ssl_ca   = "${puppet_home}/ssl/certs/ca.pem"
   # Used to authenticate to Foreman, required if require_ssl_puppetmasters is enabled
-  $client_ssl_cert = "${puppet_home}/ssl/certs/${::fqdn}.pem"
-  $client_ssl_key  = "${puppet_home}/ssl/private_keys/${::fqdn}.pem"
+  $client_ssl_cert = "${puppet_home}/ssl/certs/${lower_fqdn}.pem"
+  $client_ssl_key  = "${puppet_home}/ssl/private_keys/${lower_fqdn}.pem"
+
+  # Set these values if you want Passenger to serve a CA-provided cert instead of puppet's
+  $server_ssl_ca    = "${puppet_home}/ssl/certs/ca.pem"
+  $server_ssl_chain = "${puppet_home}/ssl/certs/ca.pem"
+  $server_ssl_cert  = "${puppet_home}/ssl/certs/${lower_fqdn}.pem"
+  $server_ssl_key   = "${puppet_home}/ssl/private_keys/${lower_fqdn}.pem"
 
   # We need the REST API interface with OAuth for some REST Puppet providers
   $oauth_active = true

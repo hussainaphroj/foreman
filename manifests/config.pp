@@ -1,22 +1,19 @@
 # Configure foreman
 class foreman::config {
-  Cron {
-    require     => User[$foreman::user],
-    user        => $foreman::user,
-    environment => "RAILS_ENV=${foreman::environment}",
+  concat_build {'foreman_settings':
+    order => ['*.yaml'],
   }
 
-  concat {'/etc/foreman/settings.yaml':
-    owner   => 'root',
-    group   => $foreman::params::group,
-    mode    => '0640',    
-    notify  => Class['foreman::service'],
-  }
- 
-  concat::fragment {'foreman_settings+01-header.yaml':
-    target  => '/etc/foreman/settings.yaml',
-    order   => 01,
+  concat_fragment {'foreman_settings+01-header.yaml':
     content => template('foreman/settings.yaml.erb'),
+  }
+
+  file {'/etc/foreman/settings.yaml':
+    source  => concat_output('foreman_settings'),
+    require => Concat_build['foreman_settings'],
+    owner   => 'root',
+    group   => $foreman::group,
+    mode    => '0640',
   }
 
   file { '/etc/foreman/database.yml':
@@ -24,24 +21,11 @@ class foreman::config {
     group   => $foreman::group,
     mode    => '0640',
     content => template('foreman/database.yml.erb'),
-    notify  => Class['foreman::service'],
   }
 
-  case $::operatingsystem {
-    Debian,Ubuntu: {
-      $init_config = '/etc/default/foreman'
-      $init_config_tmpl = 'foreman.default'
-    }
-    default: {
-      $init_config = '/etc/sysconfig/foreman'
-      $init_config_tmpl = 'foreman.sysconfig'
-    }
-  }
-  file { $init_config:
+  file { $foreman::init_config:
     ensure  => present,
-    content => template("foreman/${init_config_tmpl}.erb"),
-    require => Class['foreman::install'],
-    before  => Class['foreman::service'],
+    content => template("foreman/${foreman::init_config_tmpl}.erb"),
   }
 
   file { $foreman::app_root:
@@ -55,7 +39,6 @@ class foreman::config {
     home    => $foreman::app_root,
     gid     => $foreman::group,
     groups  => $foreman::user_groups,
-    require => Class['foreman::install'],
   }
 
   # remove crons previously installed here, they've moved to the package's
@@ -65,10 +48,6 @@ class foreman::config {
   }
 
   if $foreman::passenger  {
-    class{'foreman::config::passenger':
-      listen_on_interface => $foreman::passenger_interface,
-      scl_prefix          => $foreman::passenger_scl,
-    }
+    include foreman::config::passenger
   }
-
 }

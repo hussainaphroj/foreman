@@ -7,9 +7,11 @@ class foreman::install {
     }
   }
 
+  class { '::foreman::install::repos::extra': }
+
   $repo = $foreman::custom_repo ? {
-    true    => [],
-    default => Foreman::Install::Repos['foreman'],
+    true    => Class['foreman::install::repos::extra'],
+    default => [Class['foreman::install::repos::extra'], Foreman::Install::Repos['foreman']],
   }
 
   case $foreman::db_type {
@@ -38,4 +40,13 @@ class foreman::install {
       require => $repo,
     }
   }
+
+  if $foreman::passenger_scl {
+    package{ "${foreman::passenger_scl}-rubygem-passenger-native":
+      ensure  => installed,
+      require => Class['apache'],
+      before  => Class['apache::service'],
+    }
+  }
+
 }

@@ -16,13 +16,27 @@ describe 'foreman_external_node' do
   it "should connect to the URL in the manifest" do
     webstub = stub_request(:post, "http://localhost:3000/api/hosts/facts").with(:body => {"fake"=>"data"})
 
-    enc.stubs(:stat_file).with('fake.host.fqdn.com').returns("/tmp/fake.host.fqdn.com.yaml")
+    enc.stubs(:stat_file).with('fake.host.fqdn.com-push-facts').returns("/tmp/fake.host.fqdn.com-push-facts.yaml")
     File.stubs(:exists?).returns(false)
     File.stubs(:stat).returns(stub(:mtime => Time.now.utc))
     enc.stubs(:build_body).returns({'fake' => 'data'})
 
-    enc.upload_facts('fake.host.fqdn.com',"#{static_fixture_path}/fake.host.fqdn.com.yaml")
+    req = enc.generate_fact_request('fake.host.fqdn.com',"#{static_fixture_path}/fake.host.fqdn.com.yaml")
+    enc.upload_facts('fake.host.fqdn.com',req)
     webstub.should have_been_requested
+
+    # test pushing facts async
+    http_fact_requests = []
+    http_fact_requests << ['fake.host.fqdn.com', req]
+    enc.upload_facts_parallel(http_fact_requests)
+
+    webstub.should have_been_requested.times(2)
+
+    http_fact_requests << ['fake.host.fqdn.com', req]
+    http_fact_requests << ['fake.host.fqdn.com', req]
+    enc.upload_facts_parallel(http_fact_requests)
+
+    webstub.should have_been_requested.times(4)
   end
 
   it "should have the correct certname and hostname" do

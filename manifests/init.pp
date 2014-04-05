@@ -28,6 +28,13 @@
 #
 # $repo::                   This can be stable, rc, or nightly
 #
+# $configure_epel_repo::    If disabled the EPEL repo will not be configured on RedHat family systems.
+#                           type:boolean
+#
+# $configure_scl_repo::     If disabled the the SCL repo will not be configured on Red Hat clone systems.
+#                           (Currently only installs repos for CentOS and Scientific)
+#                           type:boolean
+#
 # $selinux::                when undef, foreman-selinux will be installed if SELinux is enabled
 #                           setting to false/true will override this check (e.g. set to false on 1.1)
 #                           type:boolean
@@ -69,10 +76,6 @@
 #
 # $environment::            Rails environment of foreman
 #
-# $puppet_basedir::         Where are puppet modules located
-#
-# $apache_conf_dir::        Directory that holds Apache configuration files (e.g. /etc/httpd/conf.d)
-#
 # $puppet_home::            Puppet home directory
 #
 # $locations_enabled::      Enable locations?
@@ -82,6 +85,14 @@
 #                           type:boolean
 #
 # $passenger_interface::    Defines which network interface passenger should listen on, undef means all interfaces
+#
+# $server_ssl_ca::          Defines Apache mod_ssl SSLCACertificateFile setting in Foreman vhost conf file.
+#
+# $server_ssl_chain::       Defines Apache mod_ssl SSLCertificateChainFile setting in Foreman vhost conf file.
+#
+# $server_ssl_cert::        Defines Apache mod_ssl SSLCertificateFile setting in Foreman vhost conf file.
+#
+# $server_ssl_key::         Defines Apache mod_ssl SSLCertificateKeyFile setting in Foreman vhost conf file.
 #
 # $oauth_active::           Enable OAuth authentication for REST API
 #                           type:boolean
@@ -103,6 +114,8 @@ class foreman (
   $ssl                    = $foreman::params::ssl,
   $custom_repo            = $foreman::params::custom_repo,
   $repo                   = $foreman::params::repo,
+  $configure_epel_repo    = $foreman::params::configure_epel_repo,
+  $configure_scl_repo     = $foreman::params::configure_scl_repo,
   $selinux                = $foreman::params::selinux,
   $gpgcheck               = $foreman::params::gpgcheck,
   $version                = $foreman::params::version,
@@ -120,12 +133,14 @@ class foreman (
   $group                  = $foreman::params::group,
   $user_groups            = $foreman::params::user_groups,
   $environment            = $foreman::params::environment,
-  $puppet_basedir         = $foreman::params::puppet_basedir,
-  $apache_conf_dir        = $foreman::params::apache_conf_dir,
   $puppet_home            = $foreman::params::puppet_home,
   $locations_enabled      = $foreman::params::locations_enabled,
   $organizations_enabled  = $foreman::params::organizations_enabled,
   $passenger_interface    = $foreman::params::passenger_interface,
+  $server_ssl_ca          = $foreman::params::server_ssl_ca,
+  $server_ssl_chain       = $foreman::params::server_ssl_chain,
+  $server_ssl_cert        = $foreman::params::server_ssl_cert,
+  $server_ssl_key         = $foreman::params::server_ssl_key,
   $oauth_active           = $foreman::params::oauth_active,
   $oauth_map_users        = $foreman::params::oauth_map_users,
   $oauth_consumer_key     = $foreman::params::oauth_consumer_key,
@@ -146,4 +161,15 @@ class foreman (
   class { 'foreman::service': } ->
   Class['foreman'] ->
   Foreman_smartproxy <| |>
+
+  # Anchor these separately so as not to break
+  # the notify between main classes
+  Class['foreman::install'] ~>
+  class { 'foreman::compute': } ~>
+  Class['foreman::service']
+
+  Class['foreman::database']~>
+  Foreman::Plugin <| |> ~>
+  Class['foreman::service']
+
 }
