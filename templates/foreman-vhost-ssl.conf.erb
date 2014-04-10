@@ -17,10 +17,10 @@
   # Use puppet certificates for SSL
 
   SSLEngine On
-  SSLCertificateFile      /var/lib/puppet/ssl/certs/<%= @fqdn %>.pem
-  SSLCertificateKeyFile   /var/lib/puppet/ssl/private_keys/<%= @fqdn %>.pem
-  SSLCertificateChainFile /var/lib/puppet/ssl/certs/ca.pem
-  SSLCACertificateFile    /var/lib/puppet/ssl/certs/ca.pem
+  SSLCertificateFile      <%= @ssldir %>/certs/<%= @fqdn %>.pem
+  SSLCertificateKeyFile   <%= @ssldir %>/private_keys/<%= @fqdn %>.pem
+  SSLCertificateChainFile <%= @ssldir %>/certs/ca.pem
+  SSLCACertificateFile    <%= @ssldir %>/certs/ca.pem
   SSLVerifyClient         optional
   SSLOptions              +StdEnvVars
   SSLVerifyDepth          3
