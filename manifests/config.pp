@@ -4,16 +4,16 @@ class foreman::config {
   concat {'/etc/foreman/settings.yaml':
     owner   => 'root',
     group   => $foreman::params::group,
-    mode    => '0640',    
+    mode    => '0640',
     notify  => Class['foreman::service'],
   }
- 
+
   concat::fragment {'foreman_settings+01-header.yaml':
     target  => '/etc/foreman/settings.yaml',
     order   => 01,
     content => template('foreman/settings.yaml.erb'),
   }
- 
+
   file { '/etc/foreman/database.yml':
     owner   => 'root',
     group   => $foreman::group,
